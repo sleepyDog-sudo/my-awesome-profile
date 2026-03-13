@@ -194,9 +194,42 @@
         .arrow { transition: transform 0.3s ease; }
         .arrow.rotate { transform: rotate(180deg); }
 
+/* --- 7. 教官特製：頂級 Linux 狀態列 --- */
+        .linux-bar {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            height: 28px;
+            background: rgba(15, 15, 15, 0.123);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 15px;
+            font-size: 12px;
+            color: #ccc;
+            z-index: 9999;
+            font-family: 'Fira Code', monospace; /* 配合你的駭客字體 */
+        }
+        .linux-left, .linux-right { display: flex; gap: 15px; align-items: center; }
+        .linux-item { display: flex; align-items: center; gap: 5px; }
+        .linux-icon { color: #888; font-weight: bold; }
+
     </style>
 </head>
 <body>
+
+    <div class="linux-bar">
+        <div class="linux-left">
+            <span class="linux-item"><span class="linux-icon">🖧</span> workspace</span>
+            <span class="linux-item"><span class="linux-icon"></span> terminal</span>
+        </div>
+        <div class="linux-right">
+            <span class="linux-item"><span class="linux-icon">⬇</span> 79.9 Kbps</span>
+            <span class="linux-item"><span class="linux-icon">CPU</span> 49.8%</span>
+            <span class="linux-item"><span class="linux-icon">RAM</span> 20.1G/63.8G</span>
+            <span class="linux-item" id="linux-clock">00:00 PM</span>
+        </div>
+    </div>
+
     <video autoplay loop muted playsinline class="bg-video">
         <source src=https://cdn.discordapp.com/attachments/987755472310403144/1482044668874195006/Loop.mp4?ex=69b58528&is=69b433a8&hm=f5d76877b281f71fc5d256e3fb49ea05b66bd6fd9a74f0dbc9ac4a3ffac2d9ca&" type="video/mp4">
     </video>
@@ -319,7 +352,7 @@
         const spotifySongText = document.getElementById('spotify-song-text');
 
         // ==========================================
-        // 教官特製：下拉選單開關指令
+        // 下拉選單開關指令
         // ==========================================
         const dropdownBtn = document.getElementById('dropdownBtn');
         const dropdownContent = document.getElementById('dropdownContent');
@@ -349,9 +382,16 @@
                 // 2. 更新燈號
                 statusDot.className = `status-dot ${p.discord_status}`;
 
-                // 3. 判斷你在幹嘛
-                if (p.activities.length > 0 && p.activities[0].name !== "Spotify") {
-                    statusText.innerText = `🎮 ${p.activities[0].name}`;
+                // 3. 判斷你在幹嘛 (教官除蟲精準版)
+                let customStatus = p.activities.find(a => a.id === "custom");
+                let gameStatus = p.activities.find(a => a.id !== "custom" && a.name !== "Spotify");
+
+                if (gameStatus) {
+                    statusText.innerText = `🎮 ${gameStatus.name}`;
+                } else if (customStatus && customStatus.state) {
+                    // 如果有自訂表情就抓表情，沒有就給個預設的對話框
+                    let emoji = customStatus.emoji ? (customStatus.emoji.id ? "👾" : customStatus.emoji.name) : "💬";
+                    statusText.innerText = `${emoji} ${customStatus.state}`;
                 } else {
                     statusText.innerText = p.discord_status === "offline" ? "離線" : "線上";
                 }
@@ -366,8 +406,23 @@
                 }
             }
         };
+
+        // ==========================================
+        // Linux 真實時鐘運算系統
+        // ==========================================
+        function updateLinuxClock() {
+            const now = new Date();
+            let h = now.getHours();
+            let m = now.getMinutes();
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12;
+            h = h ? h : 12; 
+            m = m < 10 ? '0' + m : m;
+            document.getElementById('linux-clock').innerText = `${h}:${m} ${ampm}`;
+        }
+        setInterval(updateLinuxClock, 1000);
+        updateLinuxClock(); // 網頁一打開就先算一次
     </script>
 </body>
 
 </html>
-
