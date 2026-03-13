@@ -194,7 +194,7 @@
         .arrow { transition: transform 0.3s ease; }
         .arrow.rotate { transform: rotate(180deg); }
 
-/* --- 7. 教官特製：頂級 Linux 狀態列 --- */
+/* --- 7. 教官特製：頂級 Linux 狀態列 (你弄丟的吧台！) --- */
         .linux-bar {
             position: fixed;
             top: 0; left: 0; width: 100%;
@@ -207,11 +207,43 @@
             font-size: 12px;
             color: #ccc;
             z-index: 9999;
-            font-family: 'Fira Code', monospace; /* 配合你的駭客字體 */
+            font-family: 'Fira Code', monospace;
         }
         .linux-left, .linux-right { display: flex; gap: 15px; align-items: center; }
         .linux-item { display: flex; align-items: center; gap: 5px; }
         .linux-icon { color: #888; font-weight: bold; }
+        /* 隱藏的下拉面板設定 */
+        .bar-dropdown {
+            position: absolute;
+            top: 28px; /* 貼齊狀態列底部 */
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 8px 8px;
+            padding: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            transform: translateY(-10px);
+            z-index: 10000;
+        }
+        
+        /* 滑鼠移上去就顯示！ */
+        .bar-dropdown-container:hover .bar-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* 個別面板的微調 */
+        .spotify-drop { left: 0; display: flex; gap: 10px; width: 200px; }
+        .weather-drop { right: 0; width: 180px; text-align: center; }
+        .calendar-drop { right: 0; width: 220px; text-align: center; }
+
+        /* 行事曆的格子排版 */
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 5px; }
+        .cal-day { font-size: 10px; padding: 3px; border-radius: 3px; }
+        .cal-today { background: rgba(255,255,255,0.2); color: white; font-weight: bold; }
 
     </style>
 </head>
@@ -220,13 +252,33 @@
     <div class="linux-bar">
         <div class="linux-left">
             <span class="linux-item"><span class="linux-icon">🖧</span> workspace</span>
-            <span class="linux-item"><span class="linux-icon"></span> terminal</span>
+            
+            <div class="bar-dropdown-container" id="top-spotify-container" style="display: none;">
+                <span class="linux-item bar-btn"><span class="linux-icon" style="color:#1ed760;">🎵</span> <span id="top-spotify-title">Spotify</span></span>
+                <div class="bar-dropdown spotify-drop">
+                    <img src="" id="top-spotify-img" style="width: 50px; border-radius: 5px;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span id="top-spotify-song" style="font-weight: bold; color: white;">Song</span>
+                        <span id="top-spotify-artist" style="font-size: 10px;">Artist</span>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <div class="linux-right">
-            <span class="linux-item"><span class="linux-icon">⬇</span> 79.9 Kbps</span>
-            <span class="linux-item"><span class="linux-icon">CPU</span> 49.8%</span>
-            <span class="linux-item"><span class="linux-icon">RAM</span> 20.1G/63.8G</span>
-            <span class="linux-item" id="linux-clock">00:00 PM</span>
+            <span class="linux-item" id="battery-status"><span class="linux-icon">🔋</span> --%</span>
+
+            <div class="bar-dropdown-container">
+                <span class="linux-item bar-btn" id="weather-btn"><span class="linux-icon">☁</span> 讀取中...</span>
+                <div class="bar-dropdown weather-drop" id="weather-details">
+                    </div>
+            </div>
+
+            <div class="bar-dropdown-container">
+                <span class="linux-item bar-btn" id="linux-clock">00:00 PM</span>
+                <div class="bar-dropdown calendar-drop" id="calendar-container">
+                    </div>
+            </div>
         </div>
     </div>
 
@@ -338,6 +390,18 @@
         });
 
         // ==========================================
+        // 教官特製：下拉選單開關指令
+        // ==========================================
+        const dropdownBtn = document.getElementById('dropdownBtn');
+        const dropdownContent = document.getElementById('dropdownContent');
+        const arrow = dropdownBtn.querySelector('.arrow');
+
+        dropdownBtn.addEventListener('click', () => {
+            dropdownContent.classList.toggle('show');
+            arrow.classList.toggle('rotate');
+        });
+
+        // ==========================================
         // 終極 Lanyard 雷達：自動抓取頭像與聽歌狀態
         // ==========================================
         const USER_ID = "987379082687823972"; 
@@ -345,25 +409,9 @@
         const statusDot = document.getElementById('discord-status-dot');
         const statusText = document.getElementById('discord-status-text');
         const avatarImg = document.getElementById('real-discord-avatar');
-        
-        // Spotify 卡片元素
         const spotifyCard = document.getElementById('spotify-card');
         const spotifyAlbumArt = document.getElementById('spotify-album-art');
         const spotifySongText = document.getElementById('spotify-song-text');
-
-        // ==========================================
-        // 下拉選單開關指令
-        // ==========================================
-        const dropdownBtn = document.getElementById('dropdownBtn');
-        const dropdownContent = document.getElementById('dropdownContent');
-        const arrow = dropdownBtn.querySelector('.arrow');
-
-        dropdownBtn.addEventListener('click', () => {
-            // 切換 .show 狀態，讓 CSS 的 max-height 變大
-            dropdownContent.classList.toggle('show');
-            // 切換 .rotate 狀態，讓箭頭轉向
-            arrow.classList.toggle('rotate');
-        });
 
         const ws = new WebSocket("wss://api.lanyard.rest/socket");
 
@@ -375,53 +423,90 @@
             else if (data.op === 0) {
                 const p = data.d;
 
-                // 1. 自動抓取你的真實 Discord 頭像！(如果頭像是 GIF 會自動動態顯示)
                 const ext = p.discord_user.avatar.startsWith('a_') ? 'gif' : 'png';
                 avatarImg.src = `https://cdn.discordapp.com/avatars/${USER_ID}/${p.discord_user.avatar}.${ext}?size=128`;
 
-                // 2. 更新燈號
                 statusDot.className = `status-dot ${p.discord_status}`;
 
-                // 3. 判斷你在幹嘛 (教官除蟲精準版)
                 let customStatus = p.activities.find(a => a.id === "custom");
                 let gameStatus = p.activities.find(a => a.id !== "custom" && a.name !== "Spotify");
 
                 if (gameStatus) {
                     statusText.innerText = `🎮 ${gameStatus.name}`;
                 } else if (customStatus && customStatus.state) {
-                    // 如果有自訂表情就抓表情，沒有就給個預設的對話框
                     let emoji = customStatus.emoji ? (customStatus.emoji.id ? "👾" : customStatus.emoji.name) : "💬";
                     statusText.innerText = `${emoji} ${customStatus.state}`;
                 } else {
                     statusText.innerText = p.discord_status === "offline" ? "離線" : "線上";
                 }
 
-                // 4. Spotify 專屬卡片監聽！如果你在聽歌，卡片就會浮現
+                const topSpotifyContainer = document.getElementById('top-spotify-container');
                 if (p.listening_to_spotify && p.spotify) {
-                    spotifyCard.style.display = "flex"; // 顯示卡片
+                    spotifyCard.style.display = "flex"; 
                     spotifyAlbumArt.src = p.spotify.album_art_url;
                     spotifySongText.innerText = `${p.spotify.song} by ${p.spotify.artist}`;
+                    
+                    topSpotifyContainer.style.display = "flex";
+                    document.getElementById('top-spotify-title').innerText = p.spotify.song;
+                    document.getElementById('top-spotify-img').src = p.spotify.album_art_url;
+                    document.getElementById('top-spotify-song').innerText = p.spotify.song;
+                    document.getElementById('top-spotify-artist').innerText = p.spotify.artist;
                 } else {
-                    spotifyCard.style.display = "none"; // 沒聽歌就隱藏
+                    spotifyCard.style.display = "none"; 
+                    topSpotifyContainer.style.display = "none";
                 }
             }
-        };
+        }; // <--- 教官幫你把遺失的大門關上了！
 
         // ==========================================
-        // Linux 真實時鐘運算系統
+        // 教官的終極火力：時間、日曆、天氣、電量系統
         // ==========================================
-        function updateLinuxClock() {
+        function initTimeAndCalendar() {
             const now = new Date();
-            let h = now.getHours();
-            let m = now.getMinutes();
-            let ampm = h >= 12 ? 'PM' : 'AM';
-            h = h % 12;
-            h = h ? h : 12; 
-            m = m < 10 ? '0' + m : m;
+            let h = now.getHours(), m = now.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12; m = m < 10 ? '0' + m : m;
             document.getElementById('linux-clock').innerText = `${h}:${m} ${ampm}`;
+            
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+            let calHTML = `<div>${now.getFullYear()}年 ${now.getMonth()+1}月</div><div class="cal-grid">`;
+            const weekDays = ['日','一','二','三','四','五','六'];
+            weekDays.forEach(d => calHTML += `<div style="color:#888;">${d}</div>`);
+            for(let i=0; i<firstDay; i++) calHTML += `<div></div>`; 
+            for(let i=1; i<=daysInMonth; i++) {
+                let isToday = (i === now.getDate()) ? 'cal-today' : '';
+                calHTML += `<div class="cal-day ${isToday}">${i}</div>`;
+            }
+            calHTML += `</div>`;
+            document.getElementById('calendar-container').innerHTML = calHTML;
         }
-        setInterval(updateLinuxClock, 1000);
-        updateLinuxClock(); // 網頁一打開就先算一次
+        setInterval(initTimeAndCalendar, 60000);
+        initTimeAndCalendar();
+
+        if (navigator.getBattery) {
+            navigator.getBattery().then(function(battery) {
+                function updateBatteryInfo() {
+                    let level = Math.round(battery.level * 100);
+                    let icon = battery.charging ? '⚡' : '🔋';
+                    document.getElementById('battery-status').innerHTML = `<span class="linux-icon">${icon}</span> ${level}%`;
+                }
+                updateBatteryInfo();
+                battery.addEventListener('levelchange', updateBatteryInfo);
+                battery.addEventListener('chargingchange', updateBatteryInfo);
+            });
+        }
+
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=25.04&longitude=121.53&current_weather=true')
+            .then(res => res.json())
+            .then(data => {
+                const w = data.current_weather;
+                document.getElementById('weather-btn').innerHTML = `<span class="linux-icon">☁</span> ${w.temperature}°C`;
+                document.getElementById('weather-details').innerHTML = `
+                    <div style="color:white; font-weight:bold;">Taipei City</div>
+                    <div>溫度：${w.temperature}°C</div>
+                    <div>風速：${w.windspeed} km/h</div>
+                `;
+            }).catch(e => console.log("天氣抓取失敗", e));
     </script>
 </body>
 
