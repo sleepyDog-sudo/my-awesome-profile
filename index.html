@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sleepyDog</title>
+<style>
+        /* 教官已經放棄掙扎的字體空投包：Fira Code Bold */
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@700&display=swap');
+
+        /* --- 1. 基礎與背景設定 --- */
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            /* 👇 把全站字體換成 Fira Code */
+            font-family: 'Fira Code', monospace; 
+        }
+        body {
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            color: white;
+        }
+        .bg-video {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh; object-fit: cover;
+            z-index: -1; filter: brightness(0.6);
+        }
+
+        /* --- 2. 終極 Guns.lol 橫向主機板 (結合毛玻璃) --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(0.5px);
+            -webkit-backdrop-filter: blur(0.5px);
+            border: 1px solid rgba(255, 255, 255, 0.021);
+            border-radius: 0px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .main-board {
+            width: 650px; /* 加寬版面 */
+            max-width: 95vw;
+            padding: 30px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* --- 3. 頂部標題與子卡片排版 --- */
+        .board-header { text-align: left; margin-bottom: 10px; }
+        .main-title { 
+            font-family: 'Fira Code', monospace; /* 確保大標題也是這個字體 */
+            font-size: 32px; 
+            letter-spacing: 2px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+        }
+        .sub-title { font-size: 14px; color: #ccc; margin-top: 5px; }
+
+        .activity-row {
+            display: flex; flex-wrap: wrap; gap: 15px;
+        }
+
+        /* --- 4. 獨立活動子卡片 (Discord/Spotify/Youtube) --- */
+        .act-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 0px;
+            padding: 12px 20px 12px 12px;
+            display: flex; align-items: center;
+            transform: translateZ(20px); /* 3D 浮出效果 */
+            transform-style: preserve-3d;
+            flex: 1; min-width: 250px;
+        }
+
+        /* 大頭貼與燈號 */
+        .avatar-wrapper { position: relative; margin-right: 15px; }
+        .d-avatar { width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 2px solid #2b2d31; }
+        .act-img { width: 60px; height: 60px; object-fit: cover; border-radius: 0px; margin-right: 15px; }
+        
+        .status-dot {
+            position: absolute; bottom: 0px; right: 0px;
+            width: 18px; height: 18px; border-radius: 50%; border: 3px solid #2b2d31;
+        }
+        .online { background-color: #23a559; }
+        .idle { background-color: #f0b232; }
+        .dnd { background-color: #f23f43; }
+        .offline { background-color: #80848e; }
+
+        .act-info { text-align: left; }
+        .act-name { font-size: 18px; font-weight: bold; color: #f2f3f5; margin-bottom: 4px; }
+        .act-details { font-size: 13px; color: #b5bac1; }
+
+        /* --- 5. 浮動果凍 Spotify 播放器 (保留不變) --- */
+#draggable-spotify {
+            position: fixed;
+            bottom: 20px;
+            right: 20px; 
+            width: 300px;
+            z-index: 1000; 
+            cursor: grab;
+            border-radius: 0px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.5s cubic-bezier(0.25, 1.5, 0.5, 1); 
+            
+            /* 讓整個容器變成 85% 不透明度 */
+            opacity: 0.80; 
+        }
+
+        /* 關鍵在這裡！讓裡面的 iframe 也跟著透明 */
+        #draggable-spotify iframe {
+            opacity: 0.80;
+        }
+        #draggable-spotify:active { cursor: grabbing; }
+        .drag-handle {
+            background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px);
+            color: white; text-align: center; font-size: 12px; padding: 4px;
+            border-radius: 0px 0px 0 0; user-select: none;
+        }
+        @keyframes jelly {
+            0% { transform: scale(1, 1); }
+            25% { transform: scale(0.9, 1.1); }
+            50% { transform: scale(1.1, 0.9); }
+            75% { transform: scale(0.95, 1.05); }
+            100% { transform: scale(1, 1); }
+        }
+        .jelly-anim { animation: jelly 0.5s ease; }
+
+        /* --- 6. 終極裝備：下拉式選單 --- */
+        .links-dropdown {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* 下拉按鈕本體 */
+        .dropdown-toggle {
+            width: 100%;
+            background: rgba(0, 0, 0, 0);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0);
+            padding: 15px;
+            border-radius: 0px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .dropdown-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 隱藏的選單內容區塊 (利用 max-height 做滑順動畫) */
+        .dropdown-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, margin-top 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 0;
+        }
+        /* 展開時的狀態 */
+        .dropdown-content.show {
+            max-height: 500px; /* 只要比你按鈕總高度大就好 */
+            margin-top: 15px;
+        }
+
+        /* 每一個連結按鈕的設計 */
+        .social-btn {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 15px;
+            border-radius: 0px;
+            color: #ddd;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .social-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(10px); /* 滑鼠移過去會往右浮動，超帥 */
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* GIF 小圖示的設定 */
+        .btn-gif {
+            width: 24px;
+            height: 24px;
+            margin-right: 15px;
+            border-radius: 0px; /* 如果 GIF 是方的，可以加點圓角 */
+            object-fit: cover;
+        }
+
+        /* 箭頭旋轉動畫 */
+        .arrow { transition: transform 0.3s ease; }
+        .arrow.rotate { transform: rotate(180deg); }
+
+    </style>
+</head>
+<body>
+    <video autoplay loop muted playsinline class="bg-video">
+        <source src=https://cdn.discordapp.com/attachments/987755472310403144/1482044668874195006/Loop.mp4?ex=69b58528&is=69b433a8&hm=f5d76877b281f71fc5d256e3fb49ea05b66bd6fd9a74f0dbc9ac4a3ffac2d9ca&" type="video/mp4">
+    </video>
+
+<div class="glass-card main-board" data-tilt data-tilt-max="10" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.1">
+        
+        <div class="board-header">
+            <h1 class="main-title">sleepyDog</h1>
+            <p class="sub-title">CODING SOME FUNNY SHIT AND FUCK MY LIFE</p>
+        </div>
+
+        <div class="activity-row">
+            
+            <div class="act-card">
+                <div class="avatar-wrapper">
+                    <img src="" alt="Avatar" class="d-avatar" id="real-discord-avatar">
+                    <div class="status-dot offline" id="discord-status-dot"></div>
+                </div>
+                <div class="act-info">
+                    <div class="act-name">.savior666</div>
+                    <div class="act-details" id="discord-status-text">雷達連線中...</div>
+                </div>
+            </div>
+
+            <div class="act-card" id="spotify-card" style="display: none;">
+                <img src="" alt="Album" class="act-img" id="spotify-album-art">
+                <div class="act-info">
+                    <div class="act-name" style="color: #1ed760; font-weight: bold;">Spotify 播放中</div>
+                    <div class="act-details" id="spotify-song-text">讀取中...</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="links-dropdown">
+            <button class="dropdown-toggle" id="dropdownBtn">
+                🔗 open it <span class="arrow">▼</span>
+            </button>
+            
+            <div class="dropdown-content" id="dropdownContent">
+                <a href="https://steamcommunity.com/profiles/76561199389981636/" target="_blank" class="social-btn">
+                    <img src="https://media.discordapp.net/attachments/1255692212717752513/1335398250005532742/Logo20.png?ex=69b54cc9&is=69b3fb49&hm=bb1332d9b4d4d5a05779e2e668fc341bbbf20fd7c74ee3f08620bfaa63422dc2&=&format=webp&quality=lossless" alt="Steam" class="btn-gif"> Steam Main
+                </a>
+                <a href="https://steamcommunity.com/profiles/76561198758195532/" class="social-btn">
+                    <img src="https://media.discordapp.net/attachments/1255692212717752513/1335398250005532742/Logo20.png?ex=69b54cc9&is=69b3fb49&hm=bb1332d9b4d4d5a05779e2e668fc341bbbf20fd7c74ee3f08620bfaa63422dc2&=&format=webp&quality=lossless" alt="Steam" class="btn-gif"> Steam Smurf 1
+                </a>
+                <a href="https://steamcommunity.com/profiles/76561198737054870/" class="social-btn">
+                    <img src="https://media.discordapp.net/attachments/1255692212717752513/1335398250005532742/Logo20.png?ex=69b54cc9&is=69b3fb49&hm=bb1332d9b4d4d5a05779e2e668fc341bbbf20fd7c74ee3f08620bfaa63422dc2&=&format=webp&quality=lossless" alt="Steam" class="btn-gif"> Steam Smurf 2
+                </a>
+                <a href="#" class="social-btn">
+                    <img src="https://media.discordapp.net/attachments/1255692212717752513/1335390043031998494/Logo12.png?ex=69b54524&is=69b3f3a4&hm=6986551f8db496d86156ebe0d45591d181cffda5922ee9939c093a3832a11e3f&=&format=webp&quality=lossless" alt="GitHub" class="btn-gif"> GitHub
+                </a>
+                <a href="#" class="social-btn">
+                    <img src="https://media.discordapp.net/attachments/1255692212717752513/1335387730804342866/Logo5.png?ex=69b542fd&is=69b3f17d&hm=42d6c953f7174ea99063d8bd651bfcdb7963f6fc71619d64ff645010b00e98cb&=&format=webp&quality=lossless" alt="IG" class="btn-gif"> Instagram
+                </a>
+                <a href="#" class="social-btn">
+                    <img src="https://media.discordapp.net/attachments/1255692212717752513/1335387731576098921/Logo8.png?ex=69b542fd&is=69b3f17d&hm=6b48b834af3521e6af3055fb39e67984957b4001e7c1df66e2b409e140bcdc99&=&format=webp&quality=lossless" alt="TikTok" class="btn-gif"> TikTok
+                </a>
+            </div>
+        </div>
+
+    </div> <div id="draggable-spotify" class="jelly-spotify">
+        <div class="drag-handle">≡ 點我拖曳這個我寫很久必須用用看 ≡</div>
+        <iframe data-testid="embed-iframe" style="border-radius:0 0 12px 12px" src="https://open.spotify.com/embed/playlist/4hduo0DPcmZW55U5ZxaJNt?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    <script>
+        // --- 你的果凍特效神經指令 (完全保留) ---
+        const spotify = document.getElementById('draggable-spotify');
+        const handle = spotify.querySelector('.drag-handle');
+        const iframe = spotify.querySelector('iframe');
+        let isDragging = false;
+        let offsetX, offsetY, lastX = 0, lastY = 0;
+
+        handle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - spotify.getBoundingClientRect().left;
+            offsetY = e.clientY - spotify.getBoundingClientRect().top;
+            lastX = e.clientX; lastY = e.clientY;
+            spotify.style.transition = 'none'; 
+            spotify.style.transform = 'scale(1.05)';
+            iframe.style.pointerEvents = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let currentX = e.clientX, currentY = e.clientY;
+            let speedX = currentX - lastX, speedY = currentY - lastY;
+            lastX = currentX; lastY = currentY;
+            let skewXValue = Math.max(-15, Math.min(15, speedX * 0.4));
+            let skewYValue = Math.max(-15, Math.min(15, speedY * 0.4));
+            spotify.style.left = (currentX - offsetX) + 'px';
+            spotify.style.top = (currentY - offsetY) + 'px';
+            spotify.style.right = 'auto'; spotify.style.bottom = 'auto';
+            spotify.style.transform = `scale(1.05) skewX(${-skewXValue}deg) skewY(${-skewYValue}deg) rotate(${speedX/2}deg)`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                spotify.style.transition = 'transform 0.5s cubic-bezier(0.25, 1.5, 0.5, 1)';
+                spotify.style.transform = 'scale(1) skewX(0deg) skewY(0deg) rotate(0deg)';
+                iframe.style.pointerEvents = 'auto';
+            }
+        });
+
+        // ==========================================
+        // 終極 Lanyard 雷達：自動抓取頭像與聽歌狀態
+        // ==========================================
+        const USER_ID = "987379082687823972"; 
+        
+        const statusDot = document.getElementById('discord-status-dot');
+        const statusText = document.getElementById('discord-status-text');
+        const avatarImg = document.getElementById('real-discord-avatar');
+        
+        // Spotify 卡片元素
+        const spotifyCard = document.getElementById('spotify-card');
+        const spotifyAlbumArt = document.getElementById('spotify-album-art');
+        const spotifySongText = document.getElementById('spotify-song-text');
+
+        // ==========================================
+        // 教官特製：下拉選單開關指令
+        // ==========================================
+        const dropdownBtn = document.getElementById('dropdownBtn');
+        const dropdownContent = document.getElementById('dropdownContent');
+        const arrow = dropdownBtn.querySelector('.arrow');
+
+        dropdownBtn.addEventListener('click', () => {
+            // 切換 .show 狀態，讓 CSS 的 max-height 變大
+            dropdownContent.classList.toggle('show');
+            // 切換 .rotate 狀態，讓箭頭轉向
+            arrow.classList.toggle('rotate');
+        });
+
+        const ws = new WebSocket("wss://api.lanyard.rest/socket");
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.op === 1) {
+                ws.send(JSON.stringify({ op: 2, d: { subscribe_to_id: USER_ID } }));
+            } 
+            else if (data.op === 0) {
+                const p = data.d;
+
+                // 1. 自動抓取你的真實 Discord 頭像！(如果頭像是 GIF 會自動動態顯示)
+                const ext = p.discord_user.avatar.startsWith('a_') ? 'gif' : 'png';
+                avatarImg.src = `https://cdn.discordapp.com/avatars/${USER_ID}/${p.discord_user.avatar}.${ext}?size=128`;
+
+                // 2. 更新燈號
+                statusDot.className = `status-dot ${p.discord_status}`;
+
+                // 3. 判斷你在幹嘛
+                if (p.activities.length > 0 && p.activities[0].name !== "Spotify") {
+                    statusText.innerText = `🎮 ${p.activities[0].name}`;
+                } else {
+                    statusText.innerText = p.discord_status === "offline" ? "離線" : "線上";
+                }
+
+                // 4. Spotify 專屬卡片監聽！如果你在聽歌，卡片就會浮現
+                if (p.listening_to_spotify && p.spotify) {
+                    spotifyCard.style.display = "flex"; // 顯示卡片
+                    spotifyAlbumArt.src = p.spotify.album_art_url;
+                    spotifySongText.innerText = `${p.spotify.song} by ${p.spotify.artist}`;
+                } else {
+                    spotifyCard.style.display = "none"; // 沒聽歌就隱藏
+                }
+            }
+        };
+    </script>
+</body>
+</html>
