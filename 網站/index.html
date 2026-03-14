@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: wss: data: blob:;">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sleepyDog - Terminal</title>
+    <link rel="stylesheet" href="style.css">
+    
+<script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="enter-screen" class="enter-screen">
+        <div class="glitch-wrapper">
+            <div class="glitch-text" data-text="[ CLICK TO ENTER ]"></div>
+        </div>
+    </div>
+
+    <audio id="bg-audio"></audio>
+
+    <div id="custom-music-player" class="jelly-widget glass-panel">
+        <div class="drag-handle">≡ 自訂背景音樂 ≡</div>
+        <div class="player-info">
+            <div id="player-title" class="player-title">讀取中...</div>
+            <div id="player-artist" class="player-artist">...</div>
+        </div>
+        <div class="player-controls">
+            <button id="btn-prev" class="ctrl-btn">⏮</button>
+            <button id="btn-play" class="ctrl-btn">▶</button>
+            <button id="btn-next" class="ctrl-btn">⏭</button>
+        </div>
+        <div class="progress-container">
+            <span id="time-current">0:00</span>
+            <input type="range" id="progress-bar" min="0" max="100" value="0">
+            <span id="time-total">0:00</span>
+        </div>
+        <div class="volume-container">
+            <span>🔊</span>
+            <input type="range" id="volume-bar" min="0" max="1" step="0.01" value="0.5">
+        </div>
+    </div>
+
+    <div id="draggable-spotify" class="jelly-widget">
+        <div class="drag-handle">≡ Spotify 播放器 ≡</div>
+        <iframe data-testid="embed-iframe" style="border-radius:12px" src="https://open.spotify.com/embed/playlist/4hduo0DPcmZW55U5ZxaJNt?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    </div>
+
+    <div class="linux-bar">
+        <div class="linux-left">
+            <span class="linux-item"><span class="linux-icon">🖧</span> workspace</span>
+            
+            <div class="bar-dropdown-container" id="top-spotify-container" style="display: none;">
+                <span class="linux-item bar-btn"><span class="linux-icon" style="color:var(--color-spotify);">🎵</span> <span id="top-spotify-title">Spotify</span></span>
+                <div class="bar-dropdown spotify-drop">
+                    <img src="" id="top-spotify-img" alt="Album Art" style="width: 50px; border-radius: 5px;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span id="top-spotify-song" style="font-weight: bold; color: white;">Song</span>
+                        <span id="top-spotify-artist" style="font-size: 10px;">Artist</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="linux-right">
+            <span class="linux-item" id="battery-status"><span class="linux-icon">🔋</span> --%</span>
+
+            <div class="bar-dropdown-container">
+                <span class="linux-item bar-btn" id="weather-btn"><span class="linux-icon">☁</span> 讀取中...</span>
+                <div class="bar-dropdown weather-drop" id="weather-details">
+                    </div>
+            </div>
+
+            <div class="bar-dropdown-container">
+                <span class="linux-item bar-btn" id="linux-clock">00:00 PM</span>
+                <div class="bar-dropdown calendar-drop" id="calendar-container">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <video autoplay loop muted playsinline class="bg-video">
+        <source src="https://cdn.discordapp.com/attachments/987755472310403144/1482044668874195006/Loop.mp4?ex=69b58528&is=69b433a8&hm=f5d76877b281f71fc5d256e3fb49ea05b66bd6fd9a74f0dbc9ac4a3ffac2d9ca&" type="video/mp4">
+    </video>
+
+    <div class="glass-panel main-board" data-tilt data-tilt-max="10" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.1">
+        
+        <div class="board-header">
+            <h1 class="main-title">sleepyDog</h1>
+            <p class="sub-title">CODING SOME FUNNY SHIT AND FUCK MY LIFE</p>
+        </div>
+
+        <div class="activity-row">
+            <div class="act-card glass-panel">
+                <div class="avatar-wrapper">
+                    <img src="" alt="Avatar" class="d-avatar" id="real-discord-avatar">
+                    <div class="status-dot offline" id="discord-status-dot"></div>
+                </div>
+                <div class="act-info">
+                    <div class="act-name">.savior666</div>
+                    <div class="act-details" id="discord-status-text">雷達連線中...</div>
+                </div>
+            </div>
+
+            <div class="act-card glass-panel" id="spotify-card" style="display: none;">
+                <img src="" alt="Album" class="act-img" id="spotify-album-art">
+                <div class="act-info">
+                    <div class="act-name" style="color: var(--color-spotify); font-weight: bold;">Spotify 播放中</div>
+                    <div class="act-details" id="spotify-song-text">讀取中...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="links-dropdown">
+            <button class="dropdown-toggle" id="dropdownBtn">
+                🔗 open it <span class="arrow">▼</span>
+            </button>
+            
+            <div class="dropdown-content" id="dropdownContent">
+                <a href="https://steamcommunity.com/profiles/76561199389981636/" target="_blank" class="social-btn">
+                    <img src="assets/sm.png" alt="Steam" class="btn-gif"> Steam Main
+                </a>
+                <a href="https://steamcommunity.com/profiles/76561198758195532/" target="_blank" class="social-btn">
+                    <img src="assets/sm.png" alt="Steam" class="btn-gif"> Steam Smurf 1
+                </a>
+                <a href="https://steamcommunity.com/profiles/76561198737054870/" target="_blank" class="social-btn">
+                    <img src="assets/sm.png" alt="Steam" class="btn-gif"> Steam Smurf 2
+                </a>
+                <a href="https://github.com/sleepyDog-sudo" target="_blank" class="social-btn">
+                    <img src="assets/gb.png" alt="GitHub" class="btn-gif"> GitHub
+                </a>
+                <a href="https://www.instagram.com/666_savior_666" target="_blank" class="social-btn">
+                    <img src="assets/ig.png" alt="IG" class="btn-gif"> Instagram
+                </a>
+                <a href="https://www.tiktok.com/@savior666_1" target="_blank" class="social-btn">
+                    <img src="assets/tk.png" alt="TikTok" class="btn-gif"> TikTok
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+    <script src="script.js"></script>
+    <script type="module" src="3d-enter.js"></script>
+
+</body>
+</html>
