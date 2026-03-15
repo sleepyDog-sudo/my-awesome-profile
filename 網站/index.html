@@ -7,7 +7,7 @@
     <title>sleepyDog - Terminal</title>
     <link rel="stylesheet" href="style.css">
     
-<script type="importmap">
+    <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -18,6 +18,9 @@
     </script>
 </head>
 <body>
+
+    <div id="black-bg"></div>
+    <div id="bg-3d-canvas"></div>
 
     <div id="enter-screen" class="enter-screen">
         <div class="glitch-wrapper">
@@ -58,6 +61,9 @@
         <div class="linux-left">
             <span class="linux-item"><span class="linux-icon">🖧</span> workspace</span>
             
+            <span class="linux-item bar-btn" id="toggle-terminal-btn" style="cursor: pointer; margin-left: 10px;"><span class="linux-icon">💻</span> Terminal</span>
+            <span class="linux-item bar-btn" id="spawn-dog-btn" style="cursor: pointer; color: #ffb86c;"><span class="linux-icon">🧸</span> Drop Dog</span>
+
             <div class="bar-dropdown-container" id="top-spotify-container" style="display: none;">
                 <span class="linux-item bar-btn"><span class="linux-icon" style="color:var(--color-spotify);">🎵</span> <span id="top-spotify-title">Spotify</span></span>
                 <div class="bar-dropdown spotify-drop">
@@ -75,24 +81,21 @@
 
             <div class="bar-dropdown-container">
                 <span class="linux-item bar-btn" id="weather-btn"><span class="linux-icon">☁</span> 讀取中...</span>
-                <div class="bar-dropdown weather-drop" id="weather-details">
-                    </div>
+                <div class="bar-dropdown weather-drop" id="weather-details"></div>
             </div>
 
             <div class="bar-dropdown-container">
                 <span class="linux-item bar-btn" id="linux-clock">00:00 PM</span>
-                <div class="bar-dropdown calendar-drop" id="calendar-container">
-                    </div>
+                <div class="bar-dropdown calendar-drop" id="calendar-container"></div>
             </div>
         </div>
     </div>
 
     <video autoplay loop muted playsinline class="bg-video">
-        <source src="https://cdn.discordapp.com/attachments/987755472310403144/1482044668874195006/Loop.mp4?ex=69b58528&is=69b433a8&hm=f5d76877b281f71fc5d256e3fb49ea05b66bd6fd9a74f0dbc9ac4a3ffac2d9ca&" type="video/mp4">
+        <source src="https://cdn.discordapp.com/attachments/987755472310403144/1482044668874195006/Loop.mp4?ex=69b62de8&is=69b4dc68&hm=0d00c676eabdf26aa56efe24704804a4a1fc146f6ecad3dad79c4d7f5b34ad89&" type="video/mp4">
     </video>
 
     <div class="glass-panel main-board" data-tilt data-tilt-max="10" data-tilt-speed="400" data-tilt-glare="true" data-tilt-max-glare="0.1">
-        
         <div class="board-header">
             <h1 class="main-title">sleepyDog</h1>
             <p class="sub-title">CODING SOME FUNNY SHIT AND FUCK MY LIFE</p>
@@ -123,7 +126,6 @@
             <button class="dropdown-toggle" id="dropdownBtn">
                 🔗 open it <span class="arrow">▼</span>
             </button>
-            
             <div class="dropdown-content" id="dropdownContent">
                 <a href="https://steamcommunity.com/profiles/76561199389981636/" target="_blank" class="social-btn">
                     <img src="assets/sm.png" alt="Steam" class="btn-gif"> Steam Main
@@ -145,6 +147,22 @@
                 </a>
             </div>
         </div>
+    </div>
+
+    <div id="terminal-window" class="jelly-widget glass-panel" style="top: 100px; left: 50px; width: 400px; display: none;">
+        <div class="drag-handle">≡ Terminal: sleepyDog_OS ≡</div>
+        <div class="terminal-body" style="padding: 10px; height: 200px; overflow-y: auto; background: rgba(0,0,0,0.5); font-family: 'Fira Code', monospace; font-size: 14px;">
+            <div id="terminal-output">Welcome to sleepyDog OS... Type 'help' for commands.</div>
+            <div class="input-line" style="display: flex;">
+                <span style="color: var(--color-spotify); margin-right: 5px;">$</span>
+                <input type="text" id="terminal-input" style="background: transparent; border: none; color: white; outline: none; flex: 1; font-family: inherit;" autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <div id="rpg-game-window" class="jelly-widget glass-panel" style="top: 150px; left: 100px; width: 500px; display: none;">
+        <div class="drag-handle">≡ 2D RPG: Dog Adventure ≡ <span id="rpg-close-btn" class="close-btn" style="float:right; color:#ff5f56; cursor:pointer;">✖</span></div>
+        <canvas id="rpg-canvas" width="500" height="300" style="background: #111; display: block; border-radius: 0 0 12px 12px;"></canvas>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
